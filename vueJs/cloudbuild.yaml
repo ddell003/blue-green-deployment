@@ -1,0 +1,25 @@
+steps:
+- id: Install Dependencies
+  name: 'gcr.io/cloud-builders/npm'
+  args: ['install']
+
+- id: Build Project
+  name: 'gcr.io/cloud-builders/npm'
+  args: ['run', 'build', '--', '--mode', '$_BUILD_MODE']
+
+- id: Build Image
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['build', '-t', 'gcr.io/$PROJECT_ID/safetyamp-app:$SHORT_SHA', '.']
+
+- id: Push Image
+  name: 'gcr.io/cloud-builders/docker'
+  args: ['push', 'gcr.io/$PROJECT_ID/safetyamp-app:$SHORT_SHA']
+
+- id: Generate Manifest
+  name: 'gcr.io/$PROJECT_ID/gitops-update-manifest'
+  args:
+  - --branch=staging
+  - --origin=git@bitbucker.org:hrdl/env.git
+  - 'app.image=gcr.io/$PROJECT_ID/safetyamp-app:$SHORT_SHA'
+  env:
+  - 'SSH_KEY=$_BITBUCKET_SSH_KEY'
